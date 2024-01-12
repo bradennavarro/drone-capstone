@@ -1,8 +1,6 @@
 """
-Demo of the groundcam
-Mambo takes off, takes a picture and shows a RANDOM frame, not the last one
-Author: Valentin Benke, https://github.com/Vabe7
-Author: Amy McGovern
+Test script takes a few pics with the ground camera
+and downloads them locally to your computer from the drone.
 """
 
 from pyparrot.Minidrone import Mambo

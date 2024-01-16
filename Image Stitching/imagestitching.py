@@ -2,15 +2,20 @@ import numpy as np
 import cv2
 import glob
 
-#load images from where they are (can do not hard coded but I keep changing the folder)
-image_paths = glob.glob(
-    'C:\\Users\\Mitchell\\OneDrive\\Desktop\\4th Year\\Capstone\\Image Stitching\\ImageStitchingPhotosPhone\\from phone\\*.jpg')
+# Load images from the specified folder (this is just hardcoded for now)
+folder_path = 'C:\\Users\\Mitchell\\OneDrive\\Desktop\\4th Year\\Capstone\\Image Stitching\\Image Stitching\\ImageStitchingPhotosDrone\\'
+image_paths = glob.glob(folder_path + '*.png')
 images = [cv2.imread(image) for image in image_paths]
+
+# Print the loaded files
+print("Loaded files:")
+for image_path in image_paths:
+    print(image_path)
 
 #resize images to a common height for stitching (seems like without this it gets an error saying it's too big sometimes)
 common_height = 600
-images_resized = [cv2.resize(img, (int(img.shape[1] * common_height / img.shape[0]), common_height)) for img in images]
-
+images_resized = images#[cv2.resize(img, (int(img.shape[1] * common_height / img.shape[0]), common_height)) for img in images]
+print("images resized (bigger seems to mess it up")
 
 # stitch images using RANSAC and homography
 def stitch_images(images):
@@ -34,6 +39,7 @@ def crop_black_borders(image):
     return image[y:y + h, x:x + w]
 
 # call function to stitch images
+print("calling image stiching algorithm")
 stitched_image = stitch_images(images_resized)
 
 if stitched_image is not None:
@@ -41,9 +47,10 @@ if stitched_image is not None:
     stitched_image = crop_black_borders(stitched_image)
 
     # save the stitched image in the same directory (or a different one if wanted)
-    output_path = 'C:\\Users\\Mitchell\\OneDrive\Desktop\\4th Year\\Capstone\Image Stitching\\ImageStitchingPhotosPhone\\stitched_Images\\stichedOutput.png'
+    output_path = 'C:\\Users\Mitchell\\OneDrive\\Desktop\\4th Year\\Capstone\\Image Stitching\\Image Stitching\\ImageStitchingPhotosPhone\\stitched_Images\\stichedOutputDroneTest.png'
         #will have to modify this eventually to have multiple file names too but for now just manual
     cv2.imwrite(output_path, stitched_image)
+    print("wrote to output path")
 
     # display the stitched image
     cv2.imshow("Stitched Image", stitched_image)

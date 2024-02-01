@@ -55,8 +55,8 @@ list_of_images = []
 picture_names_new = []
 
 # Custom yolov5 model
-model_path = ROOT / 'best.pt'
-repo_path = ROOT / 'yolov5-master'
+model_path = "C:\\Users\\Mitchell\\OneDrive\\Desktop\\4th Year\\Capstone\\GroundCamera\\best.pt"
+repo_path = "C:\\Users\\Mitchell\\OneDrive\\Desktop\\4th Year\\Capstone\\GroundCamera\\yolov5"
 print(ROOT)
 print(model_path)
 print(repo_path)
@@ -130,18 +130,39 @@ if (success):
         if frame is not None:
             print("GOT TO HERE")
             image = "test_image_%02d.png" % c
-            save_picture(mambo,picture_name,path,image)
-            image = ROOT / image
-            results = model(image)
+            save_picture(mambo, picture_name, path, image)
+            image_path = ROOT / image
+            results = model(image_path)
+
             for det in results.xyxy[0]:
                 x_min, y_min, x_max, y_max, confidence, class_label = det
                 if confidence > 0.70:
                     print("LANDING PAD SPOTTED!")
-                    results.save()
+
+                    # Draw the bounding box
+                    frame = cv2.imread(str(image_path))  # Read the image file
+                    color = (0, 255, 0)  # Green color for the bounding box
+                    cv2.rectangle(frame, (int(x_min), int(y_min)), (int(x_max), int(y_max)), color,
+                                  2)  # Draw the rectangle
+
+                    # You may want to add text for the label as well
+                    label = f'Confidence: {confidence:.2f}'
+                    cv2.putText(frame, label, (int(x_min), int(y_min - 10)), cv2.FONT_HERSHEY_SIMPLEX, 0.9, color, 2)
+
+                    # Save or show the image
+                    detected_image_path = str(ROOT / f"detected_{image}")
+                    cv2.imwrite(detected_image_path, frame)  # Save the image with the bounding box
+                    print(f"Saved detected image with bounding box to {detected_image_path}")
+
+                    # If you want to display the image, uncomment the following line
+                    # cv2.imshow('Detected Landing Pad', frame)
+                    # cv2.waitKey(0)  # Wait for a key press to close the displayed image
+
                     mambo.safe_land(5)
                     mambo.disconnect()
-                    break
-            c = c+1
+                    break  # Exit the loop if landing pad spotted
+
+            c = c + 1
 
         if c>20:
             break

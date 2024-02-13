@@ -1,5 +1,5 @@
 # Autonomous Indoor Mapping and Environmental Detection with Parrot Mambo Drone
-Capstone project for ENGO 500. Members: Braden Navarro, Mac Dressler, Julian Cramb, Mitchell Aitken
+Capstone project for ENGO 500. Members: Mitchell Aitken, Braden Navarro, Mac Dressler, Julian Cramb
 
 
 
@@ -14,6 +14,10 @@ This repository contains the code for a capstone project focused on autonomous i
 - `PlantImages` contains image data used for training the plant detection model.
 - `SpillImages` contains image data used for training the spill detection model.
 
+### WildLifeCounter
+- `Wildlifecounter.py`: The main script. Uses digital imaging principles and CV2 to count objects to be used for simple wildlife monitoring.
+- `processed_Mambo_1970-01-01T000325+0000_CB098B.jpg`: Example image of a succesful count.
+
 ### Image Stitching
 - `imagestitching.py`: Script for stitching images to create a comprehensive map of the indoor environment.
 - `ImageStitchingPhotosDrone`: Folder containing images taken from the drone for stitching.
@@ -27,7 +31,7 @@ This repository contains the code for a capstone project focused on autonomous i
 
 ## Usage
 Before running the scripts, ensure you have the required dependencies installed, downloading via pip. 
-NOTE: Replace the Minidrone.py file in the pyparrot library with the Minidrone.py in this repo.
+NOTE: Replace the Minidrone.py file in the PyParrot library with the Minidrone.py in this repo.
 
 
 

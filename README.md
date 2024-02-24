@@ -28,6 +28,8 @@ This repository contains the code for a capstone project focused on autonomous i
 - `Minidrone.py`: Script that interfaces with the Parrot Mambo drone for basic flight control.
 - `VLCFrontCam.py`: Script for capturing images from the drone's front camera.
 - `groundcamera.py`: Updated script for capturing images with bounding box output for detected objects.
+- `camera_time.py`: Script to test how long it takes to take an image with the ground camera as well as process the image.
+- `altitude.py`: Script to test out accuracy in ultrasonic sensor to provide altitude. Also demonstrates the Euler angle function
 
 ## Usage
 Before running the scripts, ensure you have the required dependencies installed, downloading via pip. 

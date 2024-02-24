@@ -30,6 +30,7 @@ This repository contains the code for a capstone project focused on autonomous i
 - `groundcamera.py`: Updated script for capturing images with bounding box output for detected objects.
 - `camera_time.py`: Script to test how long it takes to take an image with the ground camera as well as process the image.
 - `altitude.py`: Script to test out accuracy in ultrasonic sensor to provide altitude. Also demonstrates the Euler angle function
+- `track.py`: Script to test following a line by making corrections to the drone. Currently only for straight lines and is a work in progress. 
 
 ## Usage
 Before running the scripts, ensure you have the required dependencies installed, downloading via pip. 

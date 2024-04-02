@@ -1,7 +1,12 @@
 """
 Test script to track and follow a line
 
+IMPORTANT: For this file to run please clone the following repo
+git clone https://github.com/ultralytics/yolov5.git
+This repo should be saved in the same folder as this file 
+
 WORK IN PROGRESS!
+- Aims to fly around 1m
 - Assuming it's following a straight line
 - Assumes there are no other lines that will be detected
 
@@ -9,10 +14,11 @@ WORK IN PROGRESS!
 
 from pyparrot.Minidrone import Mambo
 import cv2
-import sys
+import math
 import numpy as np
 import os
 import time
+import torch
 
 def altitude_correction(mambo):
     # Corrects altitude of drone to remain around 1m
@@ -28,6 +34,68 @@ def altitude_correction(mambo):
         mambo.fly_direct(0,0,0,-100,abs(alt_diff))
     mambo.smart_sleep(1)
 
+def detect_landing_pad(mambo, model, image):
+
+    cwd = os.getcwd()
+    print(cwd)
+    print(os.path.join(cwd,'best.pt'))
+
+    size = image.shape
+    image_height = size[0]
+    image_width = size[1]
+
+    results = model(image)
+    detections = results.xyxy[0]
+
+    if len(detections) == 0:
+        return False
+    else:
+        for det in detections:
+            x_min, y_min, x_max, y_max, confidence, class_label = det
+
+    if confidence < 0.70:   
+        return False
+
+    # Draw the bounding box
+    landing_pad = image  # Read the image file
+    color = (0, 255, 0)  # Green color for the bounding box
+    cv2.rectangle(landing_pad, (int(x_min), int(y_min)), (int(x_max), int(y_max)), color,
+                                  2)  # Draw the rectangle
+
+    x = int((x_max + x_min)/2)
+    y = int((y_max + y_min)/2)
+
+    # Distance in pixels to landing pad
+    pix_dist = math.sqrt((x-(image_width/2))**2+(y-(image_height/2))**2)
+    # Distance in meters to landing pad
+    dist = pix_dist / 635 # [m]
+
+    angle = math.atan2(y-(image_height/2),x-(image_width/2))
+    angle = math.degrees(angle) + 90 # To account for different frames
+
+    cv2.rectangle(landing_pad, (int(x-2), int(y-2)), (int(x+2), int(y+2)), (0,0,255), 2)
+    cv2.line(landing_pad, (int(x), int(y)), (int(image_width/2),int(image_height/2),), (0,0,255), 2) 
+
+    # You may want to add text for the label as well
+    label = f'Confidence: {confidence:.2f}'
+    cv2.putText(landing_pad, label, (int(x_min), int(y_min - 10)), cv2.FONT_HERSHEY_SIMPLEX, 0.9, color, 2)
+
+    # Plots central line of the image
+    cv2.line(landing_pad, (int(image_width/2),0), (int(image_width/2),image_height), (255, 0, 0), 2)
+    cv2.line(landing_pad, (0,int(image_height/2)), (int(image_width),int(image_height/2)), (255, 0, 0), 2)
+
+    # Save or show the image
+    detected_image_path = os.path.join(cwd,"detected_landing_pad.png")
+    cv2.imwrite(detected_image_path, landing_pad)  # Save the image with the bounding box
+
+    # Movement
+    mambo.turn_degrees(angle)
+    mambo.smart_sleep(0.5)
+    mambo.fly_direct(0,30,0,0,dist)
+    mambo.smart_sleep(2)
+
+    return True
+
 
 def line_detection(mambo, image):
     # Get dimensions of image
@@ -36,10 +104,14 @@ def line_detection(mambo, image):
     image_width = size[1]
 
     # Convert the image to grayscale
-    grey = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)  
+    grey = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY) 
+
+    blur = cv2.GaussianBlur(grey,(5,5),0)
+
+    _, thresholded_image = cv2.threshold(blur, 20, 255, cv2.THRESH_BINARY)
 
     # Apply edge detection method on the image
-    edges = cv2.Canny(grey, 50, 150, apertureSize=3)
+    edges = cv2.Canny(thresholded_image, 50, 150, apertureSize=3)
 
     # This returns an array of r and theta values
     lines = cv2.HoughLines(edges, 1, np.pi / 180, 130)
@@ -97,14 +169,9 @@ def line_detection(mambo, image):
     x_line = ((image_height/2)-b)/m
     x_diff = (image_width/2) - x_line # pixels
     print("X_DIFF: " + str(x_diff))
-    print(f"Horizontal Adjustment: {x_diff / 600} m")
+    print(f"Horizontal Adjustment: {x_diff / 635} m")
 
-    #if x_diff >= 0:
-    #    mambo.fly_direct(-100,0,0,0,(x_diff / 600))
-    #else:
-    #    mambo.fly_direct(100,0,0,0,(x_diff / 600))
-    mambo.smart_sleep(0.2)
-
+    # Rotates drone to become parallel with line
     if xlow > xtop:
         angle = -(90-angle)
         print(f"Angle: {angle} degrees")
@@ -115,6 +182,14 @@ def line_detection(mambo, image):
         mambo.turn_degrees(angle)
 
     mambo.smart_sleep(1)
+
+    # Adjusts drone to move horizontal towards the line
+    #if x_diff >= 0:
+    #    mambo.fly_direct(-100,0,0,0,(x_diff / 635))
+    #else:
+    #    mambo.fly_direct(100,0,0,0,(x_diff / 635))
+    #mambo.smart_sleep(0.2)
+    
 
     # Plots central of the line
     cv2.line(image, (int(xlow), 0), (int(xtop), image_height), (0, 255, 0), 2)
@@ -136,6 +211,12 @@ def line_detection(mambo, image):
 
     return True
 
+
+# Initialize YOLOv5 model
+cwd = os.getcwd()
+model_path = os.path.join(cwd,'best.pt')
+repo_path = os.path.join(cwd,'yolov5')
+model = torch.hub.load(repo_path,'custom', path=model_path, source='local')
 
 # Images list
 images = []
@@ -179,7 +260,7 @@ if (success):
         start_time = time.time()
 
         # Correct altitude of drone
-        altitude_correction(mambo)
+        #altitude_correction(mambo)
 
         mambo.take_picture()
         mambo.smart_sleep(0.2)
@@ -188,13 +269,20 @@ if (success):
             picture_names = mambo.groundcam.get_groundcam_pictures_names()
             image = mambo.groundcam.get_groundcam_picture(picture_names[0],True) # returns a cv2 image file
 
+            # Landing pad detection
+            status = detect_landing_pad(mambo, model, image)
+            if status:
+                break
+            #else:
+            #    attempts = attempts + 1
+
             # Line detection
             line = line_detection(mambo,image)
             images.append(image)
 
             # Move drone forward
             if line:
-                mambo.fly_direct(0,100,0,0,0.5)
+                mambo.fly_direct(0,10,0,0,3)
                 mambo.smart_sleep(1)
                 mambo.hover()
             else:
@@ -207,8 +295,9 @@ if (success):
             print("No image taken")
             continue
         end_time = time.time()
-        execution_time = end_time - start_time
-        print("Execution time: ",execution_time, "seconds")
+        #execution_time = end_time - start_time
+        #print("Execution time: ",execution_time, "seconds")
+        print(attempts)
 
     mambo.safe_land(5) 
 
